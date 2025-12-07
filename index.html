@@ -57,8 +57,9 @@
         const container = document.getElementById('lyrics-container');
         const text = document.getElementById('lyrics-text');
         const status = document.getElementById('connection-status');
-        let currentText = '';
+        let currentText = null;
         let pollInterval = null;
+        let firstFetch = true;
 
         async function fetchData() {
             try {
@@ -68,9 +69,10 @@
                 const newText = data.current?.text || '';
                 status.textContent = 'Connected';
                 status.className = 'connected';
-                if (newText !== currentText) {
+                if (newText !== currentText || firstFetch) {
                     currentText = newText;
                     update(newText);
+                    firstFetch = false;
                 }
             } catch (error) {
                 status.textContent = 'Error';
