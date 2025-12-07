@@ -13,6 +13,14 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
+echo Checking Docker Desktop auto-start...
+echo IMPORTANT: Docker Desktop must start automatically on login
+echo Please open Docker Desktop -^> Settings -^> General
+echo Enable: "Start Docker Desktop when you log in"
+echo.
+echo Press any key after you've enabled this setting...
+pause >nul
+
 echo [1/5] Detecting display configuration...
 powershell -Command "$monitors = Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorBasicDisplayParams | Measure-Object; Write-Host 'Found' $monitors.Count 'display(s)'"
 echo.
@@ -47,12 +55,13 @@ echo.
 echo [4/5] Creating launcher script...
 (
 echo @echo off
-echo timeout /t 15 /nobreak ^>nul
+echo REM Wait for Docker Desktop to fully start
+echo timeout /t 30 /nobreak ^>nul
 echo start "" "%CHROME_PATH%" --kiosk --window-position=-1920,0 http://localhost:8000
 echo exit
 ) > launch-display.bat
 echo Created: launch-display.bat
-echo Note: Edit launch-display.bat to change --window-position=1920,0 if needed
+echo Note: Edit launch-display.bat to change --window-position=-1920,0 if needed
 echo.
 
 echo [5/6] Adding to Windows startup...
