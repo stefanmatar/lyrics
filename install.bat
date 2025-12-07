@@ -44,19 +44,15 @@ if not defined CHROME_PATH (
 echo Chrome path: %CHROME_PATH%
 echo.
 
-echo [4/5] Creating Chrome launcher script with auto-display detection...
+echo [4/5] Creating launcher script...
 (
 echo @echo off
-echo REM Wait for Docker to be ready
-echo timeout /t 40 /nobreak ^>nul
-echo.
-echo REM Detect secondary display and launch Chrome
-echo for /f "tokens=*" %%%%a in ^('powershell -Command "$screens = [System.Windows.Forms.Screen]::AllScreens; $secondary = $screens ^| Where-Object {-not $_.Primary} ^| Select-Object -First 1; if ($secondary) { Write-Host $secondary.Bounds.Left,$secondary.Bounds.Top } else { $primary = $screens[0]; Write-Host $primary.Bounds.Width,0 }"'^) do set POS=%%%%a
-echo set POS=%%POS: =,%%
-echo.
-echo start "" "%CHROME_PATH%" --kiosk --window-position=%%POS%% http://localhost:8000
+echo timeout /t 15 /nobreak ^>nul
+echo start "" "%CHROME_PATH%" --kiosk --window-position=-1920,0 http://localhost:8000
+echo exit
 ) > launch-display.bat
-echo Created: launch-display.bat with auto-display detection
+echo Created: launch-display.bat
+echo Note: Edit launch-display.bat to change --window-position=1920,0 if needed
 echo.
 
 echo [5/6] Adding to Windows startup...
