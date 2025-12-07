@@ -13,7 +13,11 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-echo [1/4] Starting Docker container...
+echo [1/5] Detecting display configuration...
+powershell -Command "$monitors = Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorBasicDisplayParams | Measure-Object; Write-Host 'Found' $monitors.Count 'display(s)'"
+echo.
+
+echo [2/5] Starting Docker container...
 docker-compose up -d
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Failed to start Docker container
@@ -23,22 +27,28 @@ if %ERRORLEVEL% NEQ 0 (
 echo Container started successfully!
 echo.
 
-echo [2/4] Creating Chrome launcher script...
+echo [3/5] Creating Chrome launcher script with auto-display detection...
 (
 echo @echo off
-echo timeout /t 40 /nobreak
-echo start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk --window-position=1920,0 http://localhost:8000
+echo REM Wait for Docker to be ready
+echo timeout /t 40 /nobreak ^>nul
+echo.
+echo REM Detect secondary display and launch Chrome
+echo for /f "tokens=*" %%%%a in ^('powershell -Command "$screens = [System.Windows.Forms.Screen]::AllScreens; $secondary = $screens ^| Where-Object {-not $_.Primary} ^| Select-Object -First 1; if ($secondary) { Write-Host $secondary.Bounds.Left,$secondary.Bounds.Top } else { $primary = $screens[0]; Write-Host $primary.Bounds.Width,0 }"'^) do set POS=%%%%a
+echo set POS=%%POS: =,%%
+echo.
+echo start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk --window-position=%%POS%% http://localhost:8000
 ) > launch-display.bat
-echo Created: launch-display.bat
+echo Created: launch-display.bat with auto-display detection
 echo.
 
-echo [3/4] Adding to Windows startup...
+echo [4/5] Adding to Windows startup...
 set STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
 powershell -Command "$WshShell = New-Object -comObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%STARTUP%\Lyrics Display.lnk'); $Shortcut.TargetPath = '%CD%\launch-display.bat'; $Shortcut.Save()"
 echo Added to startup folder
 echo.
 
-echo [4/4] Testing connection...
+echo [5/5] Testing connection...
 timeout /t 5 /nobreak >nul
 curl -s http://localhost:8000 >nul 2>nul
 if %ERRORLEVEL% EQU 0 (
@@ -53,15 +63,17 @@ echo Installation Complete!
 echo ========================================
 echo.
 echo The lyrics display will now:
+echo - Auto-detect secondary display
 echo - Auto-start when Windows boots
-echo - Open Chrome in fullscreen on second display
+echo - Open Chrome in fullscreen on non-primary display
 echo - Show lyrics from ProPresenter
 echo.
 echo NOTES:
-echo - If Chrome opens on wrong display, edit launch-display.bat
-echo - Change '--window-position=1920,0' to match your display setup
+echo - The script automatically detects which display is secondary
+echo - If only one display, Chrome will open at edge of primary display
 echo - Press Alt+F4 to exit fullscreen Chrome
 echo.
-echo Test now by opening: http://localhost:8000
+echo Test now by running: launch-display.bat
+echo Or open browser: http://localhost:8000
 echo.
 pause
