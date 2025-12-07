@@ -27,7 +27,24 @@ if %ERRORLEVEL% NEQ 0 (
 echo Container started successfully!
 echo.
 
-echo [3/5] Creating Chrome launcher script with auto-display detection...
+echo [3/5] Detecting Chrome installation...
+set CHROME_PATH=
+if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" set CHROME_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe
+if exist "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" set CHROME_PATH=C:\Program Files (x86)\Google\Chrome\Application\chrome.exe
+if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" set CHROME_PATH=%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe
+
+if not defined CHROME_PATH (
+    echo WARNING: Chrome not found in default locations
+    echo Please install Chrome: https://www.google.com/chrome/
+    echo Or run find-chrome.bat to search for it
+    echo.
+    echo Using Edge as fallback...
+    set CHROME_PATH=msedge
+)
+echo Chrome path: %CHROME_PATH%
+echo.
+
+echo [4/5] Creating Chrome launcher script with auto-display detection...
 (
 echo @echo off
 echo REM Wait for Docker to be ready
@@ -37,18 +54,18 @@ echo REM Detect secondary display and launch Chrome
 echo for /f "tokens=*" %%%%a in ^('powershell -Command "$screens = [System.Windows.Forms.Screen]::AllScreens; $secondary = $screens ^| Where-Object {-not $_.Primary} ^| Select-Object -First 1; if ($secondary) { Write-Host $secondary.Bounds.Left,$secondary.Bounds.Top } else { $primary = $screens[0]; Write-Host $primary.Bounds.Width,0 }"'^) do set POS=%%%%a
 echo set POS=%%POS: =,%%
 echo.
-echo start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk --window-position=%%POS%% http://localhost:8000
+echo start "" "%CHROME_PATH%" --kiosk --window-position=%%POS%% http://localhost:8000
 ) > launch-display.bat
 echo Created: launch-display.bat with auto-display detection
 echo.
 
-echo [4/5] Adding to Windows startup...
+echo [5/6] Adding to Windows startup...
 set STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
 powershell -Command "$WshShell = New-Object -comObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%STARTUP%\Lyrics Display.lnk'); $Shortcut.TargetPath = '%CD%\launch-display.bat'; $Shortcut.Save()"
 echo Added to startup folder
 echo.
 
-echo [5/5] Testing connection...
+echo [6/6] Testing connection...
 timeout /t 5 /nobreak >nul
 curl -s http://localhost:8000 >nul 2>nul
 if %ERRORLEVEL% EQU 0 (
