@@ -55,8 +55,15 @@ echo.
 echo [4/5] Creating launcher script...
 (
 echo @echo off
-echo REM Wait for Docker Desktop to fully start
-echo timeout /t 30 /nobreak ^>nul
+echo echo [Lyrics Display] Waiting for Docker to start...
+echo :wait_loop
+echo timeout /t 5 /nobreak ^>nul
+echo curl -s http://localhost:8000 ^>nul 2^>^&1
+echo if %%ERRORLEVEL%% NEQ 0 ^(
+echo     echo Still waiting for Docker...
+echo     goto wait_loop
+echo ^)
+echo echo Docker ready! Launching browser...
 echo start "" "%CHROME_PATH%" --kiosk --window-position=-1920,0 http://localhost:8000
 echo exit
 ) > launch-display.bat
