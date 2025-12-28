@@ -4,6 +4,14 @@ echo ProPresenter Lyrics Display Installer
 echo ========================================
 echo.
 
+REM Pull latest changes from git
+echo Pulling latest updates from git...
+git pull
+if %ERRORLEVEL% NEQ 0 (
+    echo WARNING: Failed to pull from git, continuing with local version...
+)
+echo.
+
 REM Check if Docker is installed
 where docker >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
@@ -55,6 +63,9 @@ echo.
 echo [4/5] Creating launcher script...
 (
 echo @echo off
+echo cd /d "%CD%"
+echo echo [Lyrics Display] Pulling latest updates...
+echo git pull
 echo echo [Lyrics Display] Waiting for Docker to start...
 echo :wait_loop
 echo timeout /t 5 /nobreak ^>nul
