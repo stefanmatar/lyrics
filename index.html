@@ -51,7 +51,8 @@
         <div id="lyrics-text"></div>
     </div>
     <script>
-        const API = '/api/status/slide';
+        const API_SLIDE = '/api/status/slide';
+        const API_AUDIENCE = '/api/status/audience_screens';
         const INTERVAL = 200;
         const container = document.getElementById('lyrics-container');
         const text = document.getElementById('lyrics-text');
@@ -62,10 +63,21 @@
 
         async function fetchData() {
             try {
-                const response = await fetch(API);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
-                const newText = data.current?.text || '';
+                // Fetch both endpoints in parallel
+                const [audienceResponse, slideResponse] = await Promise.all([
+                    fetch(API_AUDIENCE),
+                    fetch(API_SLIDE)
+                ]);
+
+                if (!audienceResponse.ok) throw new Error(`HTTP ${audienceResponse.status}`);
+                if (!slideResponse.ok) throw new Error(`HTTP ${slideResponse.status}`);
+
+                const audienceActive = await audienceResponse.json();
+                const slideData = await slideResponse.json();
+
+                // If audience screens are not active, show no lyrics
+                const newText = audienceActive ? (slideData.current?.text || '') : '';
+
                 status.textContent = 'Connected';
                 status.className = 'connected';
                 if (newText !== currentText || firstFetch) {
