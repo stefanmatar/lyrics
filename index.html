@@ -28,11 +28,6 @@
             width: 100%;
             padding: 3rem;
             text-align: center;
-            opacity: 0;
-            transition: opacity 300ms ease-in-out;
-        }
-        #lyrics-container.visible {
-            opacity: 1;
         }
         #lyrics-text {
             color: #ffffff;
@@ -40,9 +35,7 @@
             line-height: 1.4;
             white-space: pre-line;
         }
-        #connection-status {
-            display: none;
-        }
+
     </style>
 </head>
 <body>
@@ -56,38 +49,31 @@
         const INTERVAL = 200;
         const container = document.getElementById('lyrics-container');
         const text = document.getElementById('lyrics-text');
-        const status = document.getElementById('connection-status');
         let currentText = null;
         let pollInterval = null;
-        let firstFetch = true;
 
         async function fetchData() {
             try {
-                // Fetch both endpoints in parallel
                 const [audienceResponse, slideResponse] = await Promise.all([
                     fetch(API_AUDIENCE),
                     fetch(API_SLIDE)
                 ]);
 
-                if (!audienceResponse.ok) throw new Error(`HTTP ${audienceResponse.status}`);
-                if (!slideResponse.ok) throw new Error(`HTTP ${slideResponse.status}`);
+                // If either request fails, keep current lyrics
+                if (!audienceResponse.ok || !slideResponse.ok) return;
 
                 const audienceActive = await audienceResponse.json();
                 const slideData = await slideResponse.json();
 
-                // If audience screens are not active, show no lyrics
-                const newText = audienceActive ? (slideData.current?.text || '') : '';
+                // Only update if we got valid responses
+                const newText = audienceActive === true ? (slideData.current?.text || '') : '';
 
-                status.textContent = 'Connected';
-                status.className = 'connected';
-                if (newText !== currentText || firstFetch) {
+                if (newText !== currentText) {
                     currentText = newText;
                     update(newText);
-                    firstFetch = false;
                 }
             } catch (error) {
-                status.textContent = 'Error';
-                status.className = 'error';
+                // Ignore errors, keep current lyrics displayed
             }
         }
 
@@ -95,14 +81,9 @@
             if (txt && txt.trim()) {
                 const lines = txt.split('\n').slice(0, 2);
                 while (lines.length < 2) lines.push('');
-                container.classList.remove('visible');
-                setTimeout(() => {
-                    text.textContent = lines.join('\n');
-                    container.classList.add('visible');
-                }, 150);
+                text.textContent = lines.join('\n');
             } else {
-                container.classList.remove('visible');
-                setTimeout(() => text.textContent = '', 300);
+                text.textContent = '';
             }
         }
 
