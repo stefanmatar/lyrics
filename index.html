@@ -39,7 +39,6 @@
     </style>
 </head>
 <body>
-    <div id="connection-status"></div>
     <div id="lyrics-container">
         <div id="lyrics-text"></div>
     </div>
@@ -47,7 +46,6 @@
         const API_SLIDE = '/api/status/slide';
         const API_AUDIENCE = '/api/status/audience_screens';
         const INTERVAL = 200;
-        const container = document.getElementById('lyrics-container');
         const text = document.getElementById('lyrics-text');
         let currentText = null;
         let pollInterval = null;
@@ -102,7 +100,8 @@
         window.addEventListener('load', start);
         window.addEventListener('beforeunload', stop);
         document.addEventListener('visibilitychange', () => {
-            document.hidden ? stop() : start();
+            stop();
+            if (!document.hidden) start();
         });
     </script>
 </body>
