@@ -41,7 +41,7 @@ Browser → Nginx (port 8000) → ProPresenter API (192.168.3.232:50001)
 ├── nginx.conf           # Nginx configuration (proxy settings)
 ├── Dockerfile           # Docker image definition
 ├── docker-compose.yml   # Container orchestration
-├── install.bat          # Windows automated installer
+├── start.bat            # Windows startup script (install + auto-start)
 ├── find-chrome.bat      # Utility to locate Chrome installation
 ├── INSTALL-WINDOWS.md   # Detailed Windows installation guide
 ├── WINDOWS-SETUP.md     # Windows auto-start setup documentation
@@ -85,17 +85,25 @@ Browser → Nginx (port 8000) → ProPresenter API (192.168.3.232:50001)
 - Restart policy: `unless-stopped` (auto-restart)
 - Port mapping: 8000:8000
 
-### Windows Automation (`install.bat`)
+### Windows Automation (`start.bat`)
 
-**Installation Steps:**
-1. Pulls latest git updates
-2. Checks Docker installation
+**Single script for both installation and daily startup:**
+
+**First Run (Install Mode):**
+1. Detects first run (no startup shortcut exists)
+2. Prompts for Docker Desktop auto-start configuration
 3. Detects display configuration
-4. Starts Docker container
+4. Pulls latest git updates and builds container
 5. Detects Chrome installation (with Edge fallback)
-6. Creates `launch-display.bat` launcher script
-7. Adds to Windows startup folder
-8. Tests connection
+6. Adds itself to Windows startup folder
+7. Launches Chrome in kiosk mode
+
+**Subsequent Runs (Startup Mode):**
+1. Checks for git updates
+2. If updates found: pulls and rebuilds container
+3. If no updates: just starts container
+4. Waits for server to be ready
+5. Launches Chrome in kiosk mode
 
 ## How It Works
 
