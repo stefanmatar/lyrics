@@ -33,14 +33,14 @@ echo [1/5] Detecting display configuration...
 powershell -Command "$monitors = Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorBasicDisplayParams | Measure-Object; Write-Host 'Found' $monitors.Count 'display(s)'"
 echo.
 
-echo [2/5] Starting Docker container...
-docker-compose up -d
+echo [2/5] Building and starting Docker container...
+docker-compose up -d --build
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Failed to start Docker container
     pause
     exit /b 1
 )
-echo Container started successfully!
+echo Container built and started successfully!
 echo.
 
 echo [3/5] Detecting Chrome installation...
@@ -65,7 +65,16 @@ echo [4/5] Creating launcher script...
 echo @echo off
 echo cd /d "%CD%"
 echo echo [Lyrics Display] Pulling latest updates...
-echo git pull
+echo git fetch origin
+echo git diff --quiet HEAD origin/main
+echo if %%ERRORLEVEL%% NEQ 0 ^(
+echo     echo Changes detected, rebuilding container...
+echo     git pull
+echo     docker-compose up -d --build
+echo ^) else ^(
+echo     echo No changes, starting container...
+echo     docker-compose up -d
+echo ^)
 echo echo [Lyrics Display] Waiting for Docker to start...
 echo :wait_loop
 echo timeout /t 5 /nobreak ^>nul
