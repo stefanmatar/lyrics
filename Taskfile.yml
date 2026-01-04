@@ -1,0 +1,47 @@
+version: '3'
+
+dotenv: ['.env']
+
+vars:
+  CONTAINER_NAME: lyrics-propresenter-lyrics-1
+
+tasks:
+  ssh:
+    desc: Connect to Windows machine via SSH
+    cmds:
+      - sshpass -p "{{.SSH_PASS}}" ssh -o StrictHostKeyChecking=no {{.SSH_USER}}@{{.SSH_HOST}}
+
+  logs:
+    desc: Show Docker container logs from Windows
+    cmds:
+      - sshpass -p "{{.SSH_PASS}}" ssh -o StrictHostKeyChecking=no {{.SSH_USER}}@{{.SSH_HOST}} "docker logs {{.CONTAINER_NAME}} --tail {{.LINES | default 50}}"
+
+  logs:follow:
+    desc: Follow Docker container logs from Windows
+    cmds:
+      - sshpass -p "{{.SSH_PASS}}" ssh -o StrictHostKeyChecking=no {{.SSH_USER}}@{{.SSH_HOST}} "docker logs {{.CONTAINER_NAME}} --tail 50 -f"
+
+  status:
+    desc: Show Docker container status on Windows
+    cmds:
+      - sshpass -p "{{.SSH_PASS}}" ssh -o StrictHostKeyChecking=no {{.SSH_USER}}@{{.SSH_HOST}} "docker ps -a"
+
+  restart:
+    desc: Restart Docker container on Windows
+    cmds:
+      - sshpass -p "{{.SSH_PASS}}" ssh -o StrictHostKeyChecking=no {{.SSH_USER}}@{{.SSH_HOST}} "docker restart {{.CONTAINER_NAME}}"
+
+  rebuild:
+    desc: Git pull and rebuild container on Windows
+    cmds:
+      - sshpass -p "{{.SSH_PASS}}" ssh -o StrictHostKeyChecking=no {{.SSH_USER}}@{{.SSH_HOST}} "cd /d C:\\lyrics && git pull && docker-compose up -d --build"
+
+  find-project:
+    desc: Find the lyrics project folder on Windows
+    cmds:
+      - sshpass -p "{{.SSH_PASS}}" ssh -o StrictHostKeyChecking=no {{.SSH_USER}}@{{.SSH_HOST}} "docker inspect {{.CONTAINER_NAME}} --format '{{`{{json .Config.Labels}}`}}'"
+
+  exec:
+    desc: Execute command on Windows (use -- to pass command)
+    cmds:
+      - sshpass -p "{{.SSH_PASS}}" ssh -o StrictHostKeyChecking=no {{.SSH_USER}}@{{.SSH_HOST}} "{{.CLI_ARGS}}"
