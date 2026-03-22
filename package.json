@@ -1,0 +1,18 @@
+{
+  "name": "propresenter-lyrics-display",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "setup:e2e": "playwright install chromium",
+    "postinstall": "simple-git-hooks"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.1",
+    "simple-git-hooks": "^2.13.1"
+  },
+  "simple-git-hooks": {
+    "pre-push": "npm run test:e2e"
+  }
+}

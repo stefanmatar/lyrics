@@ -1,6 +1,9 @@
 services:
   propresenter-lyrics:
     build: .
+    environment:
+      PROPRESENTER_HOST: ${PROPRESENTER_HOST:-192.168.3.232}
+      PROPRESENTER_PORT: ${PROPRESENTER_PORT:-50001}
     ports:
-      - "8000:8000"
+      - "${LYRICS_PORT:-8000}:8000"
     restart: unless-stopped
