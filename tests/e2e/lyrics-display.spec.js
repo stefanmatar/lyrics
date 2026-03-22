@@ -52,6 +52,48 @@ async function mockSlides(page, slides, audienceStates) {
   };
 }
 
+async function mockApiSequence(page, slideResponses, audienceResponses) {
+  let slideRequestCount = 0;
+  let audienceRequestCount = 0;
+
+  await page.route('**/api/status/slide', async (route) => {
+    const response = slideResponses[Math.min(slideRequestCount, slideResponses.length - 1)];
+    slideRequestCount += 1;
+
+    if (response.fulfill) {
+      await route.fulfill(response.fulfill);
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(response)
+    });
+  });
+
+  await page.route('**/api/status/audience_screens', async (route) => {
+    const response = audienceResponses[Math.min(audienceRequestCount, audienceResponses.length - 1)];
+    audienceRequestCount += 1;
+
+    if (response.fulfill) {
+      await route.fulfill(response.fulfill);
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(response)
+    });
+  });
+
+  return {
+    getSlideRequestCount: () => slideRequestCount,
+    getAudienceRequestCount: () => audienceRequestCount
+  };
+}
+
 function getDistinctTexts(page) {
   return page.evaluate(() => {
     return window.__textEvents
@@ -150,4 +192,34 @@ test('hides lyrics when audience screens are disabled', async ({ page }) => {
   await expect.poll(counts.getAudienceRequestCount).toBeGreaterThanOrEqual(3);
   await expect(page.locator('#lyrics-text')).toHaveText('');
   await expect.poll(() => getDistinctTexts(page)).toEqual(['', 'Visible line\nsecond line', '']);
+});
+
+test('keeps current lyrics visible during temporary API failures', async ({ page }) => {
+  await installEventRecorder(page);
+
+  const counts = await mockApiSequence(
+    page,
+    [
+      { current: { text: 'Hold to your hope\nsteady light' } },
+      { fulfill: { status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'temporary slide failure' }) } },
+      { current: { text: 'Hold to your hope\nsteady light' } },
+      { current: { text: 'Future grace\nfinal line' } },
+      { current: { text: 'Future grace\nfinal line' } }
+    ],
+    [
+      true,
+      { fulfill: { status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'temporary audience failure' }) } },
+      true,
+      true,
+      true
+    ]
+  );
+
+  await page.goto('/');
+
+  await expect(page.locator('#lyrics-text')).toHaveText('Hold to your hope\nsteady light');
+  await expect.poll(counts.getSlideRequestCount).toBeGreaterThanOrEqual(5);
+  await expect.poll(counts.getAudienceRequestCount).toBeGreaterThanOrEqual(5);
+  await expect(page.locator('#lyrics-text')).toHaveText('Future grace\nfinal line');
+  await expect.poll(() => getDistinctTexts(page)).toEqual(['', 'Hold to your hope\nsteady light', 'Future grace\nfinal line']);
 });
