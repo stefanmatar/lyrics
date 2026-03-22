@@ -1,15 +1,5 @@
 import type { Page, Route } from '@playwright/test';
-
-type JsonResponse = Record<string, unknown> | boolean;
-type FulfillResponse = {
-  fulfill: {
-    status: number;
-    contentType: string;
-    body: string;
-  };
-};
-
-type ApiResponse = JsonResponse | FulfillResponse;
+import type { ApiResponse, FulfillResponse, JsonResponse } from '../support/lyrics-api';
 
 export class LyricsDisplayPage {
   private slideRequestCount = 0;

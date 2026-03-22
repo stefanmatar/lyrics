@@ -1,20 +1,20 @@
 import { expect, test } from '@playwright/test';
 import { LyricsDisplayPage } from './pages/LyricsDisplayPage';
+import {
+  allAudienceEnabled,
+  audienceHiddenSlides,
+  audienceHiddenStates,
+  emptySlideSequence,
+  firstRenderSlides,
+  stableLyricsSlides,
+  temporaryFailureAudience,
+  temporaryFailureSlides
+} from './support/test-data';
 
 test('only updates when the visible lyric output changes', async ({ page }) => {
   const lyricsPage = new LyricsDisplayPage(page);
   await lyricsPage.installEventRecorder();
-  await lyricsPage.mockStableResponses(
-    [
-      { current: { text: 'Amazing grace\nhow sweet' } },
-      { current: { text: '  Amazing grace \r\n how sweet  ' } },
-      { current: { text: 'Amazing grace\nhow sweet' } },
-      { current: { text: 'New song\nfirst line' } },
-      { current: { text: 'New song\nfirst line' } },
-      { current: { text: 'New song\nfirst line' } }
-    ],
-    [true, true, true, true, true, true]
-  );
+  await lyricsPage.mockStableResponses(stableLyricsSlides, allAudienceEnabled);
 
   await lyricsPage.goto();
 
@@ -28,15 +28,7 @@ test('only updates when the visible lyric output changes', async ({ page }) => {
 test('clears the display only after a confirmed empty slide response', async ({ page }) => {
   const lyricsPage = new LyricsDisplayPage(page);
   await lyricsPage.installEventRecorder();
-  await lyricsPage.mockStableResponses(
-    [
-      { current: { text: 'Still my soul\nremain' } },
-      { current: { text: '' } },
-      { current: { text: '' } },
-      { current: { text: '' } }
-    ],
-    [true, true, true, true]
-  );
+  await lyricsPage.mockStableResponses(emptySlideSequence, [true, true, true, true]);
 
   await lyricsPage.goto();
 
@@ -53,13 +45,7 @@ test('clears the display only after a confirmed empty slide response', async ({ 
 test('renders the first slide immediately on first successful fetch', async ({ page }) => {
   const lyricsPage = new LyricsDisplayPage(page);
   await lyricsPage.installEventRecorder();
-  await lyricsPage.mockStableResponses(
-    [
-      { current: { text: 'Line one\nLine two\nLine three' } },
-      { current: { text: 'Line one\nLine two\nLine three' } }
-    ],
-    [true, true]
-  );
+  await lyricsPage.mockStableResponses(firstRenderSlides, [true, true]);
 
   await lyricsPage.goto();
 
@@ -70,15 +56,7 @@ test('renders the first slide immediately on first successful fetch', async ({ p
 test('hides lyrics when audience screens are disabled', async ({ page }) => {
   const lyricsPage = new LyricsDisplayPage(page);
   await lyricsPage.installEventRecorder();
-  await lyricsPage.mockStableResponses(
-    [
-      { current: { text: 'Visible line\nsecond line' } },
-      { current: { text: 'Visible line\nsecond line' } },
-      { current: { text: 'Visible line\nsecond line' } },
-      { current: { text: 'Visible line\nsecond line' } }
-    ],
-    [true, false, false, false]
-  );
+  await lyricsPage.mockStableResponses(audienceHiddenSlides, audienceHiddenStates);
 
   await lyricsPage.goto();
 
@@ -91,22 +69,7 @@ test('hides lyrics when audience screens are disabled', async ({ page }) => {
 test('keeps current lyrics visible during temporary API failures', async ({ page }) => {
   const lyricsPage = new LyricsDisplayPage(page);
   await lyricsPage.installEventRecorder();
-  await lyricsPage.mockApiSequence(
-    [
-      { current: { text: 'Hold to your hope\nsteady light' } },
-      { fulfill: { status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'temporary slide failure' }) } },
-      { current: { text: 'Hold to your hope\nsteady light' } },
-      { current: { text: 'Future grace\nfinal line' } },
-      { current: { text: 'Future grace\nfinal line' } }
-    ],
-    [
-      true,
-      { fulfill: { status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'temporary audience failure' }) } },
-      true,
-      true,
-      true
-    ]
-  );
+  await lyricsPage.mockApiSequence(temporaryFailureSlides, temporaryFailureAudience);
 
   await lyricsPage.goto();
 
